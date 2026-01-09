@@ -6,12 +6,12 @@
   <title>Arne – Persoonlijke Website</title>
   <style>
     :root {
-      --bg: #0f172a;      /* slate-900 */
-      --card: #111827;    /* gray-900 */
-      --text: #e5e7eb;    /* gray-200 */
-      --muted: #9ca3af;   /* gray-400 */
-      --accent: #38bdf8;  /* sky-400 */
-      --accent-2: #22c55e;/* green-500 */
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
     }
     * { box-sizing: border-box; }
     body {
@@ -31,8 +31,6 @@
       position: relative;
       z-index: 2;
       overflow: hidden;
-      position: relative;
-      overflow: hidden;
       padding: 64px 24px 40px;
       max-width: 1100px;
       margin: 0 auto;
@@ -47,115 +45,35 @@
       font-weight: 600;
       font-size: 14px;
     }
-    h1 {
-      font-size: clamp(32px, 5vw, 56px);
-      margin: 16px 0 8px;
-      letter-spacing: -0.02em;
-    }
+    h1 { font-size: clamp(32px, 5vw, 56px); margin: 16px 0 8px; letter-spacing: -0.02em; }
     .subtitle { color: var(--muted); max-width: 720px; }
 
-    nav {
-      z-index: 5;
-      transition: background 0.3s ease;
-      position: sticky;
-      transition: background 0.3s ease;
-      position: sticky;
-      top: 0;
-      backdrop-filter: blur(10px);
-      background: linear-gradient(to bottom, rgba(15,23,42,0.85), rgba(15,23,42,0.6));
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      z-index: 10;
-    }
-    .nav-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: flex;
-      gap: 16px;
-      padding: 12px 24px;
-      align-items: center;
-    }
+    nav { position: sticky; top: 0; backdrop-filter: blur(10px); background: linear-gradient(to bottom, rgba(15,23,42,0.85), rgba(15,23,42,0.6)); border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 10; }
+    .nav-inner { max-width: 1100px; margin: 0 auto; display: flex; gap: 16px; padding: 12px 24px; align-items: center; }
     .nav-inner a { color: var(--text); font-weight: 600; }
     .nav-inner a:hover { color: var(--accent); }
 
-    main {
-      position: relative;
-      z-index: 2;
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 24px;
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 24px;
-    }
-    section {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.8s ease, transform 0.8s ease;
-      grid-column: span 12;
-      background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(17,24,39,0.7));
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 20px;
-      padding: 24px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.35);
-    }
-    section h2 {
-      margin-top: 0;
-      font-size: 28px;
-      letter-spacing: -0.01em;
-    }
+    main { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; }
+    section { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; grid-column: span 12; background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(17,24,39,0.7)); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.35); }
+    section h2 { margin-top: 0; font-size: 28px; letter-spacing: -0.01em; }
 
     .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
-    .card {
-      background: rgba(15,23,42,0.8);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 16px;
-      padding: 16px;
-    }
+    .card { background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; }
     .card h3 { margin-top: 0; }
-    .pill {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.12);
-      color: var(--muted);
-      margin: 6px 6px 0 0;
-      font-size: 13px;
-    }
+    .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); color: var(--muted); margin: 6px 6px 0 0; font-size: 13px; }
 
-    #progress {
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 4px;
-      width: 0;
-      background: linear-gradient(90deg, var(--accent), var(--accent-2));
-      z-index: 1000;
-    }
+    .dog-section { grid-column: span 12; background: rgba(17,24,39,0.95); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 24px; margin-top: 24px; text-align: center; }
+    .dog-section h2 { margin-bottom: 16px; }
+    .dog-gallery { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .dog-img { width: 300px; height: 260px; object-fit: cover; border-radius: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); background: #1f2937; }
 
-    #particles {
-      position: fixed;
-      inset: 0;
-      z-index: 0; /* achter content maar zichtbaar */
-      pointer-events: none;
-    }
+    #progress { position: fixed; top: 0; left: 0; height: 4px; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); z-index: 1000; }
+    #particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    footer { position: relative; z-index: 2; opacity: 0; transition: opacity 1s ease; max-width: 1100px; margin: 24px auto 64px; padding: 0 24px; color: var(--muted); text-align: center; }
 
-    footer {
-      position: relative;
-      z-index: 2;
-      opacity: 0;
-      transition: opacity 1s ease;
-      max-width: 1100px;
-      margin: 24px auto 64px;
-      padding: 0 24px;
-      color: var(--muted);
-      text-align: center;
-    }
-
-    @media (max-width: 900px) {
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 900px) { .grid-2, .grid-3, .dog-gallery { grid-template-columns: 1fr; } .dog-img { width: 100%; height: auto; } }
   </style>
 </head>
 <body>
@@ -167,6 +85,7 @@
       <a href="#over">Over mij</a>
       <a href="#interesses">Interesses</a>
       <a href="#projecten">Projecten</a>
+      <a href="#hond">Mijn Hond</a>
       <a href="#contact">Contact</a>
     </div>
   </nav>
@@ -185,13 +104,8 @@
       <h2>Over mij</h2>
       <div class="grid-2">
         <div class="card">
-          <p>
-            Ik hou ervan om te begrijpen hoe dingen werken — van hardware tot software. In mijn vrije tijd
-            werk ik aan kleine programmeerprojecten, speel ik met webtechnologieën en leer ik bij over elektronica.
-          </p>
-          <p>
-            Naast technologie ben ik graag actief en werk ik het liefst buiten of in teamverband.
-          </p>
+          <p>Ik hou ervan om te begrijpen hoe dingen werken — van hardware tot software. In mijn vrije tijd werk ik aan kleine programmeerprojecten, speel ik met webtechnologieën en leer ik bij over elektronica.</p>
+          <p>Naast technologie ben ik graag actief en werk ik het liefst buiten of in teamverband.</p>
         </div>
         <div class="card">
           <h3>Snelle feiten</h3>
@@ -231,28 +145,26 @@
       <div class="grid-2">
         <div class="card">
           <h3>Web-based games</h3>
-          <p>
-            Experimenten met HTML/JS-games die lokaal of op een eigen server kunnen draaien.
-          </p>
+          <p>Experimenten met HTML/JS-games die lokaal of op een eigen server kunnen draaien.</p>
         </div>
         <div class="card">
           <h3>Schoolprojecten</h3>
-          <p>
-            Oefeningen en projecten rond programmeren, wiskunde en technologie.
-          </p>
+          <p>Oefeningen en projecten rond programmeren, wiskunde en technologie.</p>
         </div>
       </div>
-          <div class="grid-2" style="margin-top:16px">
-        <img src="arne_website/images/DSC_0357.JPG" alt="Mijn hond" class="dog-img">
-        <img src="arne_website/images/DSC_0363.JPG" alt="Mijn hond" class="dog-img">
+    </section>
+
+    <section id="hond" class="dog-section">
+      <h2>Mijn Hond</h2>
+      <div class="dog-gallery">
+        <img src="images/DSC_0357.JPG" alt="Mijn hond" class="dog-img">
+        <img src="images/DSC_0363.JPG" alt="Mijn hond" class="dog-img">
       </div>
     </section>
 
     <section id="contact">
       <h2>Contact</h2>
-      <p>
-        Wil je samenwerken of gewoon iets vragen? Je kan me bereiken via:
-      </p>
+      <p>Wil je samenwerken of gewoon iets vragen? Je kan me bereiken via:</p>
       <ul>
         <li>E-mail: <em>arnevandewiele07@gmail.com</em></li>
       </ul>
@@ -264,12 +176,8 @@
   </footer>
 
   <script>
-    // Jaar
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    /* =============================
-       TYPEWRITER
-    ============================= */
     const text = "Hallo, ik ben Arne 👋";
     const target = document.getElementById('typewriter');
     let index = 0;
@@ -280,18 +188,12 @@
       }
     })();
 
-    /* =============================
-       SCROLL PROGRESS BAR
-    ============================= */
     window.addEventListener('scroll', () => {
       const scrollTop = document.documentElement.scrollTop;
       const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
       document.getElementById('progress').style.width = `${(scrollTop / height) * 100}%`;
     });
 
-    /* =============================
-       SECTION ANIMATIES
-    ============================= */
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -303,12 +205,8 @@
 
     document.querySelectorAll('section').forEach(s => observer.observe(s));
 
-    /* =============================
-       MENU HIGHLIGHT
-    ============================= */
     const sections = document.querySelectorAll('section');
     const navLinks = document.querySelectorAll('.nav-inner a');
-
     window.addEventListener('scroll', () => {
       let current = '';
       sections.forEach(sec => {
@@ -320,76 +218,25 @@
       });
     });
 
-    /* =============================
-       PARTICLES ACHTERGROND
-    ============================= */
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d');
     let w, h, particles;
-
-    function resize() {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-    }
+    function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
     window.addEventListener('resize', resize);
     resize();
-
-    function initParticles() {
-      particles = Array.from({ length: 80 }, () => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        r: Math.random() * 2 + 1,
-        dx: (Math.random() - 0.5) * 0.6,
-        dy: (Math.random() - 0.5) * 0.6
-      }));
-    }
+    function initParticles() { particles = Array.from({ length: 80 }, () => ({ x: Math.random()*w, y: Math.random()*h, r: Math.random()*2+1, dx:(Math.random()-0.5)*0.6, dy:(Math.random()-0.5)*0.6 })); }
     initParticles();
-
     function drawLines(mouseX, mouseY) {
       particles.forEach(p => {
-        const dx = p.x - mouseX;
-        const dy = p.y - mouseY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120) {
-          ctx.strokeStyle = `rgba(56,189,248,${1 - dist / 120})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(mouseX, mouseY);
-          ctx.stroke();
-        }
+        const dx = p.x - mouseX, dy = p.y - mouseY, dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist<120){ctx.strokeStyle=`rgba(56,189,248,${1-dist/120})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(mouseX,mouseY);ctx.stroke();}
       });
     }
-
-    let mouse = { x: null, y: null };
-    window.addEventListener('mousemove', e => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-    });
-
-    function animateParticles() {
-      ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = 'rgba(56,189,248,0.6)';
-      particles.forEach(p => {
-        p.x += p.dx;
-        p.y += p.dy;
-        if (p.x < 0 || p.x > w) p.dx *= -1;
-        if (p.y < 0 || p.y > h) p.dy *= -1;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      if (mouse.x && mouse.y) {
-        drawLines(mouse.x, mouse.y);
-      }
-
-      requestAnimationFrame(animateParticles);
-    }
+    let mouse={x:null,y:null};
+    window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+    function animateParticles(){ctx.clearRect(0,0,w,h);ctx.fillStyle='rgba(56,189,248,0.6)';particles.forEach(p=>{p.x+=p.dx;p.y+=p.dy;if(p.x<0||p.x>w)p.dx*=-1;if(p.y<0||p.y>h)p.dy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();});if(mouse.x&&mouse.y){drawLines(mouse.x,mouse.y);}requestAnimationFrame(animateParticles);}
     animateParticles();
-
-    // Footer fade-in
-    window.addEventListener('load', () => document.querySelector('footer').style.opacity = '1');
+    window.addEventListener('load',()=>document.querySelector('footer').style.opacity='1');
   </script>
 </body>
 </html>
