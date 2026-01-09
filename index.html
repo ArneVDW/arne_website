@@ -15,17 +15,22 @@
     }
     * { box-sizing: border-box; }
     body {
-      scroll-behavior: smooth;
+      position: relative;
+      z-index: 1;
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
       background: radial-gradient(1200px 600px at 10% -10%, #1f2937, transparent), var(--bg);
       color: var(--text);
       line-height: 1.6;
+      overflow-x: hidden;
     }
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
     header {
+      position: relative;
+      z-index: 2;
+      overflow: hidden;
       position: relative;
       overflow: hidden;
       padding: 64px 24px 40px;
@@ -50,6 +55,9 @@
     .subtitle { color: var(--muted); max-width: 720px; }
 
     nav {
+      z-index: 5;
+      transition: background 0.3s ease;
+      position: sticky;
       transition: background 0.3s ease;
       position: sticky;
       top: 0;
@@ -70,6 +78,8 @@
     .nav-inner a:hover { color: var(--accent); }
 
     main {
+      position: relative;
+      z-index: 2;
       max-width: 1100px;
       margin: 0 auto;
       padding: 24px;
@@ -114,7 +124,26 @@
       font-size: 13px;
     }
 
+    #progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      width: 0;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      z-index: 1000;
+    }
+
+    #particles {
+      position: fixed;
+      inset: 0;
+      z-index: 0; /* achter content maar zichtbaar */
+      pointer-events: none;
+    }
+
     footer {
+      position: relative;
+      z-index: 2;
       opacity: 0;
       transition: opacity 1s ease;
       max-width: 1100px;
@@ -130,6 +159,8 @@
   </style>
 </head>
 <body>
+  <div id="progress"></div>
+  <canvas id="particles"></canvas>
   <nav>
     <div class="nav-inner">
       <strong>Arne</strong>
@@ -229,87 +260,105 @@
   </footer>
 
   <script>
-    // Jaar automatisch invullen
+    // Jaar
     document.getElementById('year').textContent = new Date().getFullYear();
 
     /* =============================
-       TYPEWRITER EFFECT
+       TYPEWRITER
     ============================= */
     const text = "Hallo, ik ben Arne 👋";
     const target = document.getElementById('typewriter');
     let index = 0;
-    function typeWriter() {
+    (function typeWriter() {
       if (index < text.length) {
-        target.textContent += text.charAt(index);
-        index++;
+        target.textContent += text.charAt(index++);
         setTimeout(typeWriter, 80);
       }
-    }
-    typeWriter();
+    })();
 
     /* =============================
-       SCROLL ANIMATIES (sections)
-    ============================= */
-    const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
-
-    document.querySelectorAll('section').forEach(section => observer.observe(section));
-
-    /* =============================
-       PARALLAX ACHTERGROND (header)
+       SCROLL PROGRESS BAR
     ============================= */
     window.addEventListener('scroll', () => {
-      const scrolled = window.scrollY;
-      document.querySelector('header').style.transform = `translateY(${scrolled * 0.3}px)`;
+      const scrollTop = document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      document.getElementById('progress').style.width = `${(scrollTop / height) * 100}%`;
     });
 
     /* =============================
-       HOVER EFFECT CARDS
+       SECTION ANIMATIES
     ============================= */
-    document.querySelectorAll('.card').forEach(card => {
-      card.addEventListener('mouseenter', () => {
-        card.style.transform = 'translateY(-6px)';
-        card.style.transition = 'transform 0.3s ease';
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
       });
-      card.addEventListener('mouseleave', () => {
-        card.style.transform = 'translateY(0)';
-      });
-    });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('section').forEach(s => observer.observe(s));
 
     /* =============================
-       ACTIEVE MENU HIGHLIGHT
+       MENU HIGHLIGHT
     ============================= */
     const sections = document.querySelectorAll('section');
     const navLinks = document.querySelectorAll('.nav-inner a');
 
     window.addEventListener('scroll', () => {
       let current = '';
-      sections.forEach(section => {
-        const sectionTop = section.offsetTop - 120;
-        if (scrollY >= sectionTop) current = section.getAttribute('id');
+      sections.forEach(sec => {
+        if (scrollY >= sec.offsetTop - 150) current = sec.id;
       });
-
       navLinks.forEach(link => {
         link.style.color = '#e5e7eb';
-        if (link.getAttribute('href') === `#${current}`) {
-          link.style.color = '#38bdf8';
-        }
+        if (link.getAttribute('href') === `#${current}`) link.style.color = '#38bdf8';
       });
     });
 
+    /* =============================
+       PARTICLES ACHTERGROND
+    ============================= */
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let w, h, particles;
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function initParticles() {
+      particles = Array.from({ length: 80 }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 2 + 1,
+        dx: (Math.random() - 0.5) * 0.6,
+        dy: (Math.random() - 0.5) * 0.6
+      }));
+    }
+    initParticles();
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(56,189,248,0.6)';
+      particles.forEach(p => {
+        p.x += p.dx;
+        p.y += p.dy;
+        if (p.x < 0 || p.x > w) p.dx *= -1;
+        if (p.y < 0 || p.y > h) p.dy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
     // Footer fade-in
-    window.addEventListener('load', () => {
-      document.querySelector('footer').style.opacity = '1';
-    });
+    window.addEventListener('load', () => document.querySelector('footer').style.opacity = '1');
   </script>
 </body>
 </html>
