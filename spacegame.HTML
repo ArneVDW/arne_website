@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astro-Ontwijker: De Ruimte-Shooter</title>
+    <!-- Custom CSS voor de retro-futuristische look, zeer responsief -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        
+        body {
+            background-color: #0d001a; /* Diep paarszwart voor ruimte */
+            color: #e6e6fa; /* Licht lavendel voor contrast */
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Voorkom scrollen op mobiel */
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            max-width: 95vw;
+            width: 700px;
+            box-sizing: border-box;
+        }
+
+        canvas {
+            background-color: #000000;
+            border: 4px solid #4a00e0; /* Neon paars rand */
+            box-shadow: 0 0 25px #8e2de2; /* Gloeiend effect */
+            border-radius: 12px;
+            touch-action: none; /* Belangrijk voor touch-events */
+            width: 100%;
+            aspect-ratio: 1 / 1; /* Zorg ervoor dat het canvas vierkant blijft */
+        }
+
+        h1 {
+            color: #8e2de2;
+            text-shadow: 0 0 10px #4a00e0;
+            margin: 10px 0 5px 0;
+            font-size: 2em;
+            text-align: center;
+        }
+
+        #info-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* Twee kolommen */
+            gap: 10px 20px;
+            width: 100%;
+            max-width: 700px;
+            padding: 0 10px;
+        }
+        
+        .info-item {
+            font-size: 1.1em;
+            color: #8e2de2;
+            text-shadow: 0 0 5px #4a00e0;
+            text-align: center;
+        }
+        
+        #lives-display {
+            color: #ff004c; /* Rood voor levens */
+        }
+        
+        #powerup-display {
+            color: #8e2de2; /* Default kleur */
+        }
+
+        button {
+            background: linear-gradient(145deg, #4a00e0, #8e2de2);
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1em;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px #4a00e0;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: linear-gradient(145deg, #8e2de2, #4a00e0);
+            box-shadow: 0 6px #4a00e0;
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            box-shadow: 0 2px #4a00e0;
+            transform: translateY(2px);
+        }
+
+        /* Mobiele Besturing (Touch) */
+        #touch-controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 700px;
+            padding: 10px 0;
+        }
+
+        .touch-button {
+            padding: 15px;
+            width: 22%; /* Meer knoppen, dus smaller */
+            text-align: center;
+            font-size: 1.5em;
+        }
+        
+        /* Verberg touch controls op desktop, toon ze op kleinere schermen */
+        @media (min-width: 768px) {
+            #touch-controls {
+                display: none;
+            }
+        }
+        
+        /* Zorg dat de Power-up display ook werkt op mobiel */
+        @media (max-width: 600px) {
+            #info-panel {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Astro-Ontwijker</h1>
+    
+    <div id="info-panel">
+        <div class="info-item">Score: <span id="score">0</span></div>
+        <div class="info-item">Hoogste Score: <span id="high-score">0</span></div>
+        <div class="info-item">Levens: <span id="lives-display">3</span></div>
+        <div class="info-item">Power-up: <span id="powerup-display">Geen</span></div>
+    </div>
+
+    <canvas id="gameCanvas" width="600" height="600"></canvas>
+    
+    <button id="startButton" class="start-button">Start Spel</button>
+
+    <!-- Touch Controls voor Mobiel (Nu met Schieten) -->
+    <div id="touch-controls">
+        <button id="leftButton" class="touch-button">←</button>
+        <button id="thrustButton" class="touch-button">▲</button>
+        <button id="shootButton" class="touch-button">★</button>
+        <button id="rightButton" class="touch-button">→</button>
+    </div>
+</div>
+
+<script>
+    // Global Constants and DOM Elements
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startButton = document.getElementById('startButton');
+    const scoreDisplay = document.getElementById('score');
+    const highScoreDisplay = document.getElementById('high-score');
+    const livesDisplay = document.getElementById('lives-display');
+    const powerupDisplay = document.getElementById('powerup-display'); // Power-up display
+    const touchControls = {
+        left: document.getElementById('leftButton'),
+        thrust: document.getElementById('thrustButton'),
+        right: document.getElementById('rightButton'),
+        shoot: document.getElementById('shootButton')
+    };
+    
+    // Web Audio API Context (Voor geluidseffecten)
+    const AudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Geluidseffect Functie 
+    function playSound(frequency, duration, type, volume = 0.5) {
+        const oscillator = AudioCtx.createOscillator();
+        const gainNode = AudioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(AudioCtx.destination);
+
+        oscillator.type = type || 'sine';
+        oscillator.frequency.setValueAtTime(frequency, AudioCtx.currentTime);
+
+        gainNode.gain.setValueAtTime(volume, AudioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, AudioCtx.currentTime + duration);
+
+        oscillator.start(AudioCtx.currentTime);
+        oscillator.stop(AudioCtx.currentTime + duration);
+    }
+    
+    let game = {
+        isRunning: false,
+        score: 0,
+        highScore: 0,
+        lastTime: 0,
+        deltaTime: 0,
+        asteroidSpawnTimer: 0,
+        spawnInterval: 1500,
+        stars: [],
+        bullets: [],
+        particles: [],
+        powerups: [] 
+    };
+
+    // Laad hoogste score vanuit localStorage
+    game.highScore = parseInt(localStorage.getItem('astroDodgerHighScore') || '0', 10);
+    highScoreDisplay.textContent = game.highScore;
+
+    // Speler Object
+    let player = {
+        x: 0,
+        y: 0,
+        radius: 10,
+        angle: -Math.PI / 2, // Start wijzend naar boven
+        velocity: { x: 0, y: 0 },
+        rotationSpeed: 0.005,
+        thrustPower: 0.00005,
+        maxSpeed: 0.2,
+        isThrusting: false,
+        isRotatingLeft: false,
+        isRotatingRight: false,
+        isShooting: false,
+        color: '#00ffff',
+        lives: 3,
+        invulnerabilityTimer: 0,
+        invulnerabilityDuration: 3000, // 3 seconden
+        bulletCooldown: 300, // Standaard cooldown in ms
+        lastShotTime: 0,
+        rapidFireTimer: 0, // Tijd resterend voor rapid fire
+        rapidFireDuration: 5000 // 5 seconden
+    };
+
+    // --- KLASSEN VOOR GAME OBJECTEN ---
+
+    class Star {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.size = Math.random() * 2 + 0.5;
+            this.speed = Math.random() * 0.02 + 0.005; // Langzaam
+            this.color = 'rgba(255, 255, 255, ' + (0.5 + Math.random() * 0.5) + ')';
+        }
+
+        update(deltaTime) {
+            // Beweeg de sterren omhoog (zorgt voor een illusie van achterwaartse beweging van het schip)
+            this.y -= this.speed * deltaTime;
+
+            // Wikkel om als ze buiten beeld zijn
+            if (this.y < 0) {
+                this.y = canvas.height;
+                this.x = Math.random() * canvas.width;
+            }
+        }
+
+        draw() {
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.size, this.size);
+        }
+    }
+    
+    class Asteroid {
+        constructor(x, y, radius, velocityX, velocityY) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.velocity = { x: velocityX, y: velocityY };
+            this.color = '#aaaaaa'; 
+            this.scored = false;
+            // Genereer willekeurige hoekpunten voor een grilliger uiterlijk
+            this.vertices = [];
+            const numVertices = Math.floor(Math.random() * 5) + 7; // 7 tot 11 hoekpunten
+            for (let i = 0; i < numVertices; i++) {
+                const angle = (i / numVertices) * Math.PI * 2;
+                const offset = (Math.random() * 0.4 + 0.8) * this.radius; // straal +/- 20%
+                this.vertices.push({ x: offset * Math.cos(angle), y: offset * Math.sin(angle) });
+            }
+        }
+
+        update(deltaTime) {
+            this.x += this.velocity.x * deltaTime;
+            this.y += this.velocity.y * deltaTime;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.moveTo(this.x + this.vertices[0].x, this.y + this.vertices[0].y);
+            
+            for (let i = 1; i < this.vertices.length; i++) {
+                ctx.lineTo(this.x + this.vertices[i].x, this.y + this.vertices[i].y);
+            }
+            ctx.closePath();
+            
+            ctx.strokeStyle = '#aaaaaa';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#666666';
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        getHitboxRadius() {
+            // Gebruik de oorspronkelijke radius voor de botsingscontrole
+            return this.radius;
+        }
+
+        isOffScreen() {
+            return this.x < -this.radius || this.x > canvas.width + this.radius ||
+                   this.y < -this.radius || this.y > canvas.height + this.radius;
+        }
+    }
+    
+    class Bullet {
+        constructor(x, y, angle) {
+            this.x = x;
+            this.y = y;
+            this.radius = 3;
+            this.speed = 0.5; // Zeer snel
+            this.velocity = { 
+                x: Math.cos(angle) * this.speed, 
+                y: Math.sin(angle) * this.speed 
+            };
+            this.color = '#ff004c'; // Neon rood laser
+        }
+
+        update(deltaTime) {
+            this.x += this.velocity.x * deltaTime;
+            this.y += this.velocity.y * deltaTime;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.shadowColor = this.color;
+            ctx.shadowBlur = 5;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+        
+        isOffScreen() {
+            return this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height;
+        }
+    }
+    
+    class PowerUp {
+        constructor(x, y, type = 'rapidFire') {
+            this.x = x;
+            this.y = y;
+            this.radius = 8;
+            this.type = type;
+            this.color = '#00ff4c'; // Groen voor rapid fire
+            // Langzaam drijven
+            this.velocity = { x: (Math.random() - 0.5) * 0.03, y: (Math.random() - 0.5) * 0.03 };
+            this.rotation = 0;
+            this.rotationSpeed = 0.005;
+        }
+
+        update(deltaTime) {
+            this.x += this.velocity.x * deltaTime;
+            this.y += this.velocity.y * deltaTime;
+            this.rotation += this.rotationSpeed * deltaTime;
+            
+            // Wrap around
+            if (this.x < 0) this.x = canvas.width;
+            if (this.x > canvas.width) this.x = 0;
+            if (this.y < 0) this.y = canvas.height;
+            if (this.y > canvas.height) this.y = 0;
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.rotation);
+            
+            // Teken een pulserende ster/diamant vorm
+            ctx.beginPath();
+            const points = 5;
+            const pulse = 1 + Math.sin(performance.now() / 200) * 0.2;
+            for (let i = 0; i < points * 2; i++) {
+                const outerRadius = this.radius * pulse; 
+                const innerRadius = this.radius / 2 * pulse;
+                const r = i % 2 === 0 ? outerRadius : innerRadius;
+                const angle = (i * Math.PI / points);
+                ctx.lineTo(r * Math.cos(angle), r * Math.sin(angle));
+            }
+            ctx.closePath();
+            
+            ctx.fillStyle = this.color;
+            ctx.shadowColor = this.color;
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            ctx.restore();
+            ctx.shadowBlur = 0;
+        }
+    }
+    
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x;
+            this.y = y;
+            this.size = Math.random() * 3 + 1;
+            this.color = color;
+            this.velocity = {
+                x: (Math.random() - 0.5) * 0.3,
+                y: (Math.random() - 0.5) * 0.3
+            };
+            this.lifetime = 1000; // Leven in ms
+            this.timeAlive = 0;
+        }
+
+        update(deltaTime) {
+            this.x += this.velocity.x * deltaTime;
+            this.y += this.velocity.y * deltaTime;
+            this.timeAlive += deltaTime;
+        }
+
+        draw() {
+            const alpha = 1 - (this.timeAlive / this.lifetime);
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1; // Reset alpha
+        }
+    }
+
+
+    // --- GAME SETUP & INITIALISATIE ---
+    
+    // Functie om de canvasgrootte aan te passen en spelerpositie te initialiseren
+    function resizeCanvas() {
+        const size = canvas.clientWidth; 
+        canvas.width = size;
+        canvas.height = size;
+        
+        player.x = canvas.width / 2;
+        player.y = canvas.height / 2;
+    }
+
+    // Pas de grootte aan bij het laden en bij het wijzigen van het venster
+    window.addEventListener('load', resizeCanvas);
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initialiseer het spel (wordt ook gebruikt voor reset)
+    function initGame() {
+        resizeCanvas();
+        game.score = 0;
+        scoreDisplay.textContent = game.score;
+        
+        // Reset Speler
+        player.lives = 3;
+        livesDisplay.textContent = player.lives;
+        player.x = canvas.width / 2;
+        player.y = canvas.height / 2;
+        player.velocity = { x: 0, y: 0 };
+        player.angle = -Math.PI / 2; 
+        player.invulnerabilityTimer = 0;
+        player.rapidFireTimer = 0; // Reset rapid fire
+        
+        // Reset Game arrays
+        game.asteroids = [];
+        game.bullets = [];
+        game.particles = [];
+        game.powerups = []; // Reset power-ups
+        
+        // Reset difficulty/spawn timer
+        game.asteroidSpawnTimer = 0;
+        game.spawnInterval = 1500;
+        
+        // Initialiseer sterren
+        game.stars = [];
+        for (let i = 0; i < 100; i++) {
+            game.stars.push(new Star());
+        }
+        
+        // Reset UI
+        powerupDisplay.textContent = 'Geen';
+        powerupDisplay.style.color = '#8e2de2';
+    }
+
+    // --- SPEL-LOGICA FUNCTIES ---
+    
+    function createExplosion(x, y, color, count = 20) {
+        for (let i = 0; i < count; i++) {
+            game.particles.push(new Particle(x, y, color));
+        }
+    }
+
+    function updatePlayer(deltaTime, timestamp) {
+        // Update onkwetsbaarheidstimer
+        if (player.invulnerabilityTimer > 0) {
+            player.invulnerabilityTimer -= deltaTime;
+        }
+        
+        // Update rapid fire timer
+        if (player.rapidFireTimer > 0) {
+            player.rapidFireTimer -= deltaTime;
+        }
+        
+        const currentBulletCooldown = player.rapidFireTimer > 0 ? 80 : player.bulletCooldown; // Veel sneller schieten (80ms)
+
+        // 1. Rotatie
+        if (player.isRotatingLeft) {
+            player.angle -= player.rotationSpeed * deltaTime;
+        }
+        if (player.isRotatingRight) {
+            player.angle += player.rotationSpeed * deltaTime;
+        }
+
+        // 2. Stuwkracht/Acceleratie
+        if (player.isThrusting) {
+            const thrustX = Math.cos(player.angle) * player.thrustPower * deltaTime;
+            const thrustY = Math.sin(player.angle) * player.thrustPower * deltaTime;
+
+            player.velocity.x += thrustX;
+            player.velocity.y += thrustY;
+
+            // Speel stuwkrachtgeluid en genereer partikels
+            playSound(300 + Math.random() * 50, 0.05, 'triangle', 0.1);
+            game.particles.push(new Particle(
+                player.x - Math.cos(player.angle) * 10,
+                player.y - Math.sin(player.angle) * 10,
+                'orange'
+            ));
+        }
+
+        // 3. Wrijving/Deceleratie
+        player.velocity.x *= 0.99;
+        player.velocity.y *= 0.99;
+        
+        // 4. Maximale snelheid
+        let currentSpeed = Math.sqrt(player.velocity.x ** 2 + player.velocity.y ** 2);
+        if (currentSpeed > player.maxSpeed) {
+            player.velocity.x = (player.velocity.x / currentSpeed) * player.maxSpeed;
+            player.velocity.y = (player.velocity.y / currentSpeed) * player.maxSpeed;
+        }
+
+        // 5. Positie Updaten en Randen Omsluiten (Wrap around)
+        player.x += player.velocity.x * deltaTime;
+        player.y += player.velocity.y * deltaTime;
+
+        if (player.x < 0) player.x = canvas.width;
+        if (player.x > canvas.width) player.x = 0;
+        if (player.y < 0) player.y = canvas.height;
+        if (player.y > canvas.height) player.y = 0;
+        
+        // 6. Schieten
+        if (player.isShooting && (timestamp - player.lastShotTime) > currentBulletCooldown) {
+            shootBullet(timestamp);
+        }
+    }
+    
+    function shootBullet(timestamp) {
+        // Voeg een nieuwe kogel toe aan de array
+        game.bullets.push(new Bullet(
+            player.x + Math.cos(player.angle) * 15,
+            player.y + Math.sin(player.angle) * 15,
+            player.angle
+        ));
+        
+        // Reset de cooldown en speel geluid
+        player.lastShotTime = timestamp;
+        playSound(800, 0.1, 'sawtooth', 0.2);
+    }
+    
+    function drawPlayer() {
+        const isInvulnerable = player.invulnerabilityTimer > 0;
+        const isRapidFire = player.rapidFireTimer > 0;
+        
+        // Groene kleur en extra gloed bij rapid fire
+        const currentColor = isRapidFire ? '#00ff4c' : player.color; 
+        
+        // Maak het schip knipperend als het onkwetsbaar is
+        if (isInvulnerable && Math.floor(performance.now() / 100) % 2 === 0) {
+            // Sla tekenen over tijdens de knipperfase
+            return; 
+        }
+
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        ctx.rotate(player.angle);
+
+        // Teken het schip (driehoek)
+        ctx.beginPath();
+        ctx.moveTo(15, 0); 
+        ctx.lineTo(-10, -10); 
+        ctx.lineTo(-10, 10); 
+        ctx.closePath();
+        
+        ctx.strokeStyle = currentColor;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = currentColor;
+        ctx.shadowBlur = (isInvulnerable || isRapidFire) ? 20 : 10; 
+        ctx.stroke();
+
+        // Teken de stuwkrachtvlam
+        if (player.isThrusting) {
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(-20 + Math.random() * 5, -5);
+            ctx.lineTo(-20 + Math.random() * 5, 5);
+            ctx.closePath();
+            
+            ctx.fillStyle = 'rgba(255, 100, 0, 0.8)'; 
+            ctx.shadowColor = '#ff4500';
+            ctx.shadowBlur = 10;
+            ctx.fill();
+        }
+
+        ctx.restore();
+        ctx.shadowBlur = 0;
+    }
+
+    function spawnAsteroid() {
+        const size = Math.random() * 15 + 15; // Radius tussen 15 en 30
+        const speed = Math.random() * 0.08 + 0.05; 
+        
+        let x, y, angle;
+        const edge = Math.floor(Math.random() * 4); 
+
+        // Bepaal startpositie en de richting (angle) naar het midden
+        switch (edge) {
+            case 0: // Bovenrand
+                x = Math.random() * canvas.width;
+                y = -size;
+                angle = Math.random() * Math.PI / 2 + Math.PI / 4; 
+                break;
+            case 1: // Rechterrand
+                x = canvas.width + size;
+                y = Math.random() * canvas.height;
+                angle = Math.random() * Math.PI / 2 + Math.PI * 3 / 4; 
+                break;
+            case 2: // Onderrand
+                x = Math.random() * canvas.width;
+                y = canvas.height + size;
+                angle = Math.random() * Math.PI / 2 + Math.PI * 5 / 4; 
+                break;
+            case 3: // Linkerrand
+                x = -size;
+                y = Math.random() * canvas.height;
+                angle = Math.random() * Math.PI / 2 - Math.PI / 4; 
+                if (angle < 0) angle += Math.PI * 2;
+                break;
+        }
+
+        const velocityX = Math.cos(angle) * speed;
+        const velocityY = Math.sin(angle) * speed;
+        
+        game.asteroids.push(new Asteroid(x, y, size, velocityX, velocityY));
+    }
+    
+    function updateAsteroids(deltaTime) {
+        game.asteroidSpawnTimer += deltaTime;
+        
+        // Verhoog moeilijkheid: interval neemt af tot 300ms
+        const difficultyFactor = Math.min(0.8, game.score / 2000); 
+        game.spawnInterval = 1500 * (1 - difficultyFactor);
+        game.spawnInterval = Math.max(300, game.spawnInterval); 
+
+        if (game.asteroidSpawnTimer >= game.spawnInterval) {
+            spawnAsteroid();
+            game.asteroidSpawnTimer = 0;
+        }
+        
+        // Update en Teken alle asteroïden
+        for (let i = game.asteroids.length - 1; i >= 0; i--) {
+            const asteroid = game.asteroids[i];
+            asteroid.update(deltaTime);
+            asteroid.draw();
+
+            // Verhoog score als asteroïde de helft van het scherm passeert
+            if (!asteroid.scored && asteroid.y > canvas.height / 2) {
+                game.score++;
+                scoreDisplay.textContent = game.score;
+                asteroid.scored = true; 
+                
+                if (game.score > game.highScore) {
+                    game.highScore = game.score;
+                    highScoreDisplay.textContent = game.highScore;
+                }
+            }
+
+            if (asteroid.isOffScreen()) {
+                game.asteroids.splice(i, 1);
+            }
+        }
+    }
+    
+    function updateBullets(deltaTime) {
+        for (let i = game.bullets.length - 1; i >= 0; i--) {
+            const bullet = game.bullets[i];
+            bullet.update(deltaTime);
+            bullet.draw();
+            
+            if (bullet.isOffScreen()) {
+                game.bullets.splice(i, 1);
+            }
+        }
+    }
+    
+    function updatePowerUps(deltaTime) {
+        // Spawnen van Power-ups (kleine kans)
+        if (Math.random() < 0.0005 * deltaTime / 16) { 
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            game.powerups.push(new PowerUp(x, y, 'rapidFire'));
+        }
+        
+        // Update en Teken alle power-ups
+        for (let i = game.powerups.length - 1; i >= 0; i--) {
+            const powerUp = game.powerups[i];
+            powerUp.update(deltaTime);
+            powerUp.draw();
+        }
+    }
+    
+    function updateParticles(deltaTime) {
+        for (let i = game.particles.length - 1; i >= 0; i--) {
+            const particle = game.particles[i];
+            particle.update(deltaTime);
+            if (particle.timeAlive >= particle.lifetime) {
+                game.particles.splice(i, 1);
+            } else {
+                particle.draw();
+            }
+        }
+    }
+    
+    function updateStars(deltaTime) {
+        for (const star of game.stars) {
+            star.update(deltaTime);
+            star.draw();
+        }
+    }
+
+    // --- COLLISIE LOGICA ---
+    
+    function checkCollisions() {
+        // 1. Kogel vs Asteroïde
+        for (let i = game.bullets.length - 1; i >= 0; i--) {
+            const bullet = game.bullets[i];
+            for (let j = game.asteroids.length - 1; j >= 0; j--) {
+                const asteroid = game.asteroids[j];
+                
+                const dx = bullet.x - asteroid.x;
+                const dy = bullet.y - asteroid.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < bullet.radius + asteroid.getHitboxRadius()) {
+                    // Raak!
+                    createExplosion(asteroid.x, asteroid.y, '#ff4500', 30);
+                    playSound(120, 0.3, 'square', 0.5); // Explosie geluid
+                    
+                    game.bullets.splice(i, 1);
+                    game.asteroids.splice(j, 1);
+                    game.score += 5; // Extra score voor vernietigen
+                    scoreDisplay.textContent = game.score;
+
+                    if (game.score > game.highScore) {
+                        game.highScore = game.score;
+                        highScoreDisplay.textContent = game.highScore;
+                    }
+                    
+                    // Break om te voorkomen dat we de kogel opnieuw checken
+                    break; 
+                }
+            }
+        }
+
+        // 2. Speler vs Asteroïde
+        if (player.invulnerabilityTimer <= 0) {
+            for (const asteroid of game.asteroids) {
+                const dx = player.x - asteroid.x;
+                const dy = player.y - asteroid.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < player.radius + asteroid.getHitboxRadius()) {
+                    // Speler geraakt!
+                    handlePlayerHit(asteroid);
+                    return true;
+                }
+            }
+        }
+        
+        // 3. Speler vs Power-up
+        for (let i = game.powerups.length - 1; i >= 0; i--) {
+            const powerUp = game.powerups[i];
+            const dx = player.x - powerUp.x;
+            const dy = player.y - powerUp.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < player.radius + powerUp.radius) {
+                // Verzamelde Power-up!
+                handlePowerUp(powerUp);
+                game.powerups.splice(i, 1);
+                // Geen return, botsing met asteroïde kan nog steeds gebeuren
+            }
+        }
+        
+        return false;
+    }
+    
+    function handlePowerUp(powerUp) {
+        if (powerUp.type === 'rapidFire') {
+            player.rapidFireTimer = player.rapidFireDuration;
+            playSound(1000, 0.1, 'sine', 0.5); // Power-up geluid
+        }
+    }
+    
+    function handlePlayerHit(hitAsteroid) {
+        player.lives--;
+        livesDisplay.textContent = player.lives;
+        
+        // Start onkwetsbaarheid
+        player.invulnerabilityTimer = player.invulnerabilityDuration;
+        
+        // Explosie effect op de speler
+        createExplosion(player.x, player.y, player.color, 50);
+        
+        // Explosie geluid (lager dan kogel impact)
+        playSound(80, 0.5, 'square', 0.8);
+        
+        // Reset spelerpositie en snelheid
+        player.x = canvas.width / 2;
+        player.y = canvas.height / 2;
+        player.velocity = { x: 0, y: 0 };
+
+        // Game Over controleren
+        if (player.lives <= 0) {
+            gameOver();
+        }
+    }
+    
+    // --- SPEL-LUS ---
+
+    function gameLoop(timestamp) {
+        if (!game.isRunning) return;
+
+        game.deltaTime = timestamp - game.lastTime;
+        game.lastTime = timestamp;
+        
+        // Wis het canvas (met een lichte vervaging voor trails)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Trek alle elementen
+        updateStars(game.deltaTime);
+        updateParticles(game.deltaTime);
+        updatePowerUps(game.deltaTime); // Power-ups updaten
+        updatePlayer(game.deltaTime, timestamp);
+        updateBullets(game.deltaTime);
+        updateAsteroids(game.deltaTime);
+        drawPlayer();
+
+        // Controleer op botsingen
+        checkCollisions();
+        
+        // Update Power-up UI
+        if (player.rapidFireTimer > 0) {
+            const seconds = Math.ceil(player.rapidFireTimer / 1000);
+            powerupDisplay.textContent = `Rapid Fire (${seconds}s)`;
+            powerupDisplay.style.color = '#00ff4c';
+        } else {
+            powerupDisplay.textContent = 'Geen';
+            powerupDisplay.style.color = '#8e2de2';
+        }
+
+
+        // Vraag de volgende animatieframer aan
+        requestAnimationFrame(gameLoop);
+    }
+    
+    // --- SPEL STATUS FUNCTIES ---
+
+    function startGame() {
+        // Zorg ervoor dat de AudioContext resume als deze is gesuspended (nodig voor sommige browsers)
+        if (AudioCtx.state === 'suspended') {
+            AudioCtx.resume(); 
+        }
+        
+        initGame();
+        startButton.textContent = 'Opnieuw Spelen';
+        startButton.disabled = true;
+        
+        game.isRunning = true;
+        game.lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function gameOver() {
+        game.isRunning = false;
+        startButton.disabled = false;
+        
+        // Sla de hoogste score op
+        if (game.score > game.highScore) {
+            localStorage.setItem('astroDodgerHighScore', game.score);
+        }
+        
+        // Teken Game Over scherm
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#ff004c'; // Neon rood
+        ctx.font = 'bold 48px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('SPEL VOORBIJ', canvas.width / 2, canvas.height / 2 - 30);
+        
+        ctx.fillStyle = '#e6e6fa';
+        ctx.font = '24px Orbitron';
+        ctx.fillText(`Je Score: ${game.score}`, canvas.width / 2, canvas.height / 2 + 20);
+    }
+
+    // --- EVENT LISTENERS (Invoer) ---
+    
+    // Desktop Toetsenbord Invoer
+    const keyMap = {
+        'arrowleft': 'left', 'a': 'left',
+        'arrowright': 'right', 'd': 'right',
+        'arrowup': 'thrust', 'w': 'thrust', ' ': 'thrust',
+        'control': 'shoot', 'z': 'shoot', 'x': 'shoot' // Schieten
+    };
+
+    function handleKeyDown(event) {
+        if (!game.isRunning) return;
+        const action = keyMap[event.key.toLowerCase()];
+
+        if (action === 'left') player.isRotatingLeft = true;
+        else if (action === 'right') player.isRotatingRight = true;
+        else if (action === 'thrust') player.isThrusting = true;
+        else if (action === 'shoot') player.isShooting = true;
+    }
+
+    function handleKeyUp(event) {
+        if (!game.isRunning) return;
+        const action = keyMap[event.key.toLowerCase()];
+
+        if (action === 'left') player.isRotatingLeft = false;
+        else if (action === 'right') player.isRotatingRight = false;
+        else if (action === 'thrust') player.isThrusting = false;
+        else if (action === 'shoot') player.isShooting = false;
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    startButton.addEventListener('click', startGame); // Dit is de startknop listener!
+
+    // Mobiele Touch Invoer 
+    function setTouchControls(event, isPressed) {
+        if (!game.isRunning) return;
+        event.preventDefault(); 
+        const target = event.target;
+        
+        if (target === touchControls.left) {
+            player.isRotatingLeft = isPressed;
+        } else if (target === touchControls.right) {
+            player.isRotatingRight = isPressed;
+        } else if (target === touchControls.thrust) {
+            player.isThrusting = isPressed;
+        } else if (target === touchControls.shoot) {
+            player.isShooting = isPressed;
+        }
+    }
+
+    // Luister naar touch/muis events op de touch buttons
+    Object.values(touchControls).forEach(button => {
+        button.addEventListener('touchstart', (e) => setTouchControls(e, true), { passive: false });
+        button.addEventListener('touchend', (e) => setTouchControls(e, false), { passive: false });
+        button.addEventListener('mousedown', (e) => setTouchControls(e, true), { passive: false });
+        button.addEventListener('mouseup', (e) => setTouchControls(e, false), { passive: false });
+        button.addEventListener('mouseleave', (e) => { 
+            if (e.buttons === 0) setTouchControls(e, false);
+        });
+    });
+
+    // Toon de initiële starttekst op het canvas
+    function drawStartScreen() {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#8e2de2';
+        ctx.font = 'bold 36px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('ASTRO-ONTWIJKER 2.0', canvas.width / 2, canvas.height / 2 - 100);
+        
+        ctx.fillStyle = '#e6e6fa';
+        ctx.font = '20px Orbitron';
+        ctx.fillText('Vernietig de asteroïden en overleef!', canvas.width / 2, canvas.height / 2 - 20);
+        
+        ctx.font = '16px Orbitron';
+        ctx.fillText('Besturing:', canvas.width / 2, canvas.height / 2 + 30);
+        ctx.fillText('Bewegen: WASD / Pijltjes', canvas.width / 2, canvas.height / 2 + 60);
+        ctx.fillText('Schieten: Z / X / Ctrl (of de ★ knop)', canvas.width / 2, canvas.height / 2 + 90);
+        ctx.fillText('Verzamel de groene sterren voor Rapid Fire!', canvas.width / 2, canvas.height / 2 + 120);
+    }
+    
+    // Zorg ervoor dat het startscherm wordt getekend nadat de canvasgrootte is ingesteld
+    window.onload = function () {
+        initGame(); // Initialiseer sterren, etc.
+        drawStartScreen();
+    };
+
+</script>
+
+</body>
+</html>
