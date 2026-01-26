@@ -124,5 +124,27 @@
     <a href="index.html">← Terug naar mijn website</a>
   </footer>
 
+  <script>
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let w, h, particles;
+    function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize);
+    resize();
+    function initParticles() { particles = Array.from({ length: 80 }, () => ({ x: Math.random()*w, y: Math.random()*h, r: Math.random()*2+1, dx:(Math.random()-0.5)*0.6, dy:(Math.random()-0.5)*0.6 })); }
+    initParticles();
+    function drawLines(mouseX, mouseY) {
+      particles.forEach(p => {
+        const dx = p.x - mouseX, dy = p.y - mouseY, dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist<120){ctx.strokeStyle=`rgba(56,189,248,${1-dist/120})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(mouseX,mouseY);ctx.stroke();}
+      });
+    }
+    let mouse={x:null,y:null};
+    window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+    function animateParticles(){ctx.clearRect(0,0,w,h);ctx.fillStyle='rgba(56,189,248,0.6)';particles.forEach(p=>{p.x+=p.dx;p.y+=p.dy;if(p.x<0||p.x>w)p.dx*=-1;if(p.y<0||p.y>h)p.dy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();});if(mouse.x&&mouse.y){drawLines(mouse.x,mouse.y);}requestAnimationFrame(animateParticles);}
+    animateParticles();
+    window.addEventListener('load',()=>document.querySelector('footer').style.opacity='1');
+  </script>
+
 </body>
 </html>
